@@ -1,11 +1,11 @@
-from SACHIN_MUSIC import app
+from SONALI_MUSIC import app
 from pyrogram.errors import RPCError, UserAlreadyParticipant, ChatAdminRequired, InviteRequestSent, UserNotParticipant
 from pyrogram.types import ChatMemberUpdated, InlineKeyboardMarkup, InlineKeyboardButton, Message, ChatJoinRequest
 from pyrogram import Client, filters, enums
 from pyrogram.enums import ParseMode, ChatMemberStatus
 from logging import getLogger
-from SACHIN_MUSIC.utils.database import add_served_chat, get_assistant, is_active_chat
-from SACHIN_MUSIC.misc import SUDOERS
+from SONALI_MUSIC.utils.database import add_served_chat, get_assistant, is_active_chat
+from SONALI_MUSIC.misc import SUDOERS
 import asyncio
 import random
 import os
