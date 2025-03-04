@@ -51,7 +51,7 @@ async def _whisper(_, inline_query):
                 InlineQueryResultArticle(
                     title="💒 ᴡʜɪsᴘᴇʀ 💒",
                     description=f"sᴇɴᴅ ᴀ ᴡʜɪsᴘᴇʀ ᴛᴏ{user.first_name}!",
-                    input_message_content=InputTextMessageContent(f"💒 ʏᴏᴜ ᴀʀᴇ sᴇɴᴅɪɴɢ ᴀ ᴡʜɪsᴘᴇʀ ᴛᴏ {user.first_name}. 🏩\n\nᴛʏᴘᴇ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ/sᴇɴᴛᴇɴᴄᴇ.😘"),
+                    input_message_content=InputTextMessageContent(f" 🔒 ᴀ ᴡʜɪꜱᴘᴇʀ ᴍᴇꜱꜱᴀɢᴇ ᴛᴏ   {user.first_name}. ᴏɴʟʏ ʜᴇ/ꜱʜᴇ ᴄᴀɴ ᴏᴘᴇɴ ɪᴛ."),
                     thumb_url="https://files.catbox.moe/ynsu0c.jpg",
                     reply_markup=whisper_btn
                 ),
