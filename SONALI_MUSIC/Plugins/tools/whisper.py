@@ -109,7 +109,7 @@ async def whispes_cb(_, query):
 async def in_help():
     answers = [
         InlineQueryResultArticle(
-            title="💒 ᴡʜɪsᴘᴇʀ 💒",
+            title=" ᴡʜɪsᴘᴇʀ 🔐",
             description=f"@radha_music_bot [USERNAME / ID] [ YOUR TEXT]",
             input_message_content=InputTextMessageContent(f"**📍ᴜsᴀɢᴇ:**\n\n@radha_music_bot (Target Username or ID) (Your Message).\n\n**Example:**\n@radha_music_bot @iamakki001 I love You 😘"),
             thumb_url="https://files.catbox.moe/ynsu0c.jpg",
