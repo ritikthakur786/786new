@@ -8,7 +8,7 @@ from pyrogram.types import (
 
 whisper_db = {}
 
-switch_btn = InlineKeyboardMarkup([[InlineKeyboardButton("💒 sᴛᴀʀᴛ ᴡʜɪsᴘᴇʀ 💒", switch_inline_query_current_chat="")]])
+switch_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🔒 sᴛᴀʀᴛ ᴡʜɪsᴘᴇʀ ", switch_inline_query_current_chat="")]])
 
 async def _whisper(_, inline_query):
     data = inline_query.query
@@ -36,7 +36,7 @@ async def _whisper(_, inline_query):
         except:
             mm = [
                 InlineQueryResultArticle(
-                    title="💒 ᴡʜɪsᴘᴇʀ 💒",
+                    title=" ᴡʜɪsᴘᴇʀ 🔒",
                     description="Invalid username or ID!",
                     input_message_content=InputTextMessageContent("Invalid username or ID!"),
                     thumb_url="https://files.catbox.moe/ynsu0c.jpg",
@@ -45,11 +45,11 @@ async def _whisper(_, inline_query):
             ]
         
         try:
-            whisper_btn = InlineKeyboardMarkup([[InlineKeyboardButton("💒 ᴡʜɪsᴘᴇʀ 💒", callback_data=f"fdaywhisper_{inline_query.from_user.id}_{user.id}")]])
+            whisper_btn = InlineKeyboardMarkup([[InlineKeyboardButton(" ᴡʜɪsᴘᴇʀ 🔒", callback_data=f"fdaywhisper_{inline_query.from_user.id}_{user.id}")]])
             one_time_whisper_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🔩 ᴏɴᴇ-ᴛɪᴍᴇ ᴡʜɪsᴘᴇʀ", callback_data=f"fdaywhisper_{inline_query.from_user.id}_{user.id}_one")]])
             mm = [
                 InlineQueryResultArticle(
-                    title="💒 ᴡʜɪsᴘᴇʀ 💒",
+                    title=" ᴡʜɪsᴘᴇʀ 🔒",
                     description=f"sᴇɴᴅ ᴀ ᴡʜɪsᴘᴇʀ ᴛᴏ{user.first_name}!",
                     input_message_content=InputTextMessageContent(f" 🔒 ᴀ ᴡʜɪꜱᴘᴇʀ ᴍᴇꜱꜱᴀɢᴇ ᴛᴏ   {user.first_name}. ᴏɴʟʏ ʜᴇ/ꜱʜᴇ ᴄᴀɴ ᴏᴘᴇɴ ɪᴛ."),
                     thumb_url="https://files.catbox.moe/ynsu0c.jpg",
