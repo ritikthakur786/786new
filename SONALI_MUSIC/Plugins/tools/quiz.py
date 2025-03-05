@@ -33,6 +33,11 @@ async def send_quiz_poll(client, chat_id, user_id, interval):
     # Fetch quiz question
     question, all_answers, cid = await fetch_quiz_question()
 
+    # Ensure all_answers is a list of strings
+    if not isinstance(all_answers, list) or not all(isinstance(option, str) for option in all_answers):
+        print(f"Invalid options format: {all_answers}")
+        return
+
     # Delete the previous active poll if it exists
     if user_id in active_polls:
         try:
@@ -44,10 +49,9 @@ async def send_quiz_poll(client, chat_id, user_id, interval):
     poll_message = await app.send_poll(
         chat_id=chat_id,
         question=question,
-        options=all_answers,
+        options=all_answers,  # Ensuring it's a list of strings
         is_anonymous=False,
-        type=PollType.QUIZ,
-        #allows_multiple_answers=True,  # Allow multiple answers
+        type="quiz",
         correct_option_id=cid,
         open_period=interval  # Countdown timer for the poll in seconds
     )
@@ -55,7 +59,6 @@ async def send_quiz_poll(client, chat_id, user_id, interval):
     # Store the message ID of the new poll
     if poll_message:
         active_polls[user_id] = poll_message.id  # Corrected to use `.id`
-
 @app.on_message(filters.command(["quiz", "uiz"], prefixes=["/", "!", ".", "Q", "q"]))
 async def quiz_info(client, message):
     user_id = message.from_user.id
@@ -103,6 +106,7 @@ async def quiz_on(client, message):
     )
 
 # Handle button presses for time intervals
+
 @app.on_callback_query(filters.regex(r"^\d+_sec$|^\d+_min$"))
 async def start_quiz_loop(client, callback_query):
     user_id = callback_query.from_user.id
@@ -113,18 +117,14 @@ async def start_quiz_loop(client, callback_query):
         return
 
     # Determine interval based on the button pressed
-    if callback_query.data == "30_sec":
-        interval = 30
-        interval_text = "30 seconds"
-    elif callback_query.data == "1_min":
-        interval = 60
-        interval_text = "1 minute"
-    elif callback_query.data == "5_min":
-        interval = 300
-        interval_text = "5 minutes"
-    elif callback_query.data == "10_min":
-        interval = 600
-        interval_text = "10 minutes"
+    interval_mapping = {
+        "30_sec": (30, "30 seconds"),
+        "1_min": (60, "1 minute"),
+        "5_min": (300, "5 minutes"),
+        "10_min": (600, "10 minutes")
+    }
+
+    interval, interval_text = interval_mapping.get(callback_query.data, (60, "1 minute"))
 
     # Delete the original message with buttons
     await callback_query.message.delete()
@@ -138,7 +138,6 @@ async def start_quiz_loop(client, callback_query):
     while quiz_loops.get(user_id, False):
         await send_quiz_poll(client, chat_id, user_id, interval)
         await asyncio.sleep(interval)  # Wait for the selected interval before sending the next quiz
-
 # /quiz off command to stop the quiz loop
 @app.on_message(filters.command(["quizoff", "uizoff"], prefixes=["/", "!", ".", "Q", "q"]))
 async def stop_quiz(client, message):
