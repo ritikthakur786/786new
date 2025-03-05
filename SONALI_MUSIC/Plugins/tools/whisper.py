@@ -45,7 +45,7 @@ async def _whisper(_, inline_query):
             ]
         
         try:
-            whisper_btn = InlineKeyboardMarkup([[InlineKeyboardButton(" ᴡʜɪsᴘᴇʀ 🔒", callback_data=f"fdaywhisper_{inline_query.from_user.id}_{user.id}")]])
+            whisper_btn = InlineKeyboardMarkup([[InlineKeyboardButton(" ᴡʜɪsᴘᴇʀ 🔐", callback_data=f"fdaywhisper_{inline_query.from_user.id}_{user.id}")]])
             one_time_whisper_btn = InlineKeyboardMarkup([[InlineKeyboardButton("🔩 ᴏɴᴇ-ᴛɪᴍᴇ ᴡʜɪsᴘᴇʀ", callback_data=f"fdaywhisper_{inline_query.from_user.id}_{user.id}_one")]])
             mm = [
                 InlineQueryResultArticle(
