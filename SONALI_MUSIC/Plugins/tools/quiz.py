@@ -1,6 +1,7 @@
 import random
 import requests
 import asyncio
+import html
 from pyrogram import filters
 from pyrogram.enums import PollType
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -14,28 +15,30 @@ active_polls = {}  # To track active poll messages for each user
 async def fetch_quiz_question():
     categories = [9, 17, 18, 20, 21, 27]  # Quiz categories
     url = f"https://opentdb.com/api.php?amount=1&category={random.choice(categories)}&type=multiple"
-    response = requests.get(url).json()
+    
+    try:
+        response = requests.get(url).json()
+        question_data = response["results"][0]
 
-    question_data = response["results"][0]
-    question = question_data["question"]
-    correct_answer = question_data["correct_answer"]
-    incorrect_answers = question_data["incorrect_answers"]
+        question = html.unescape(question_data["question"])
+        correct_answer = html.unescape(question_data["correct_answer"])
+        incorrect_answers = [html.unescape(ans) for ans in question_data["incorrect_answers"]]
 
-    all_answers = incorrect_answers + [correct_answer]
-    random.shuffle(all_answers)
+        all_answers = incorrect_answers + [correct_answer]
+        random.shuffle(all_answers)
 
-    cid = all_answers.index(correct_answer)
-
-    return question, all_answers, cid
+        cid = all_answers.index(correct_answer)
+        return question, all_answers, cid
+    except Exception as e:
+        print(f"Error fetching quiz question: {e}")
+        return None, None, None
 
 # Function to send a quiz poll with an open_period for countdown
 async def send_quiz_poll(client, chat_id, user_id, interval):
-    # Fetch quiz question
     question, all_answers, cid = await fetch_quiz_question()
 
-    # Ensure all_answers is a list of strings
-    if not isinstance(all_answers, list) or not all(isinstance(option, str) for option in all_answers):
-        print(f"Invalid options format: {all_answers}")
+    if not question or not all_answers:
+        print("Skipping quiz due to invalid question data.")
         return
 
     # Delete the previous active poll if it exists
@@ -45,78 +48,65 @@ async def send_quiz_poll(client, chat_id, user_id, interval):
         except Exception as e:
             print(f"Failed to delete previous poll: {e}")
 
-    # Send new quiz poll with a countdown using open_period
-    poll_message = await app.send_poll(
-        chat_id=chat_id,
-        question=question,
-        options=all_answers,  # Ensuring it's a list of strings
-        is_anonymous=False,
-        type="quiz",
-        correct_option_id=cid,
-        open_period=interval  # Countdown timer for the poll in seconds
-    )
+    # Send new quiz poll
+    try:
+        poll_message = await app.send_poll(
+            chat_id=chat_id,
+            question=question,
+            options=all_answers,
+            is_anonymous=False,
+            type=PollType.QUIZ,
+            correct_option_id=cid,
+            open_period=interval
+        )
+        if poll_message:
+            active_polls[user_id] = poll_message.id
+    except Exception as e:
+        print(f"Error sending poll: {e}")
 
-    # Store the message ID of the new poll
-    if poll_message:
-        active_polls[user_id] = poll_message.id  # Corrected to use `.id`
+# /quiz command
 @app.on_message(filters.command(["quiz", "uiz"], prefixes=["/", "!", ".", "Q", "q"]))
 async def quiz_info(client, message):
-    user_id = message.from_user.id
-
-    # Send the informational message
     await message.reply_text(
         "**Welcome to the Quiz Bot!**\n\n"
-        "Here is how it works:\n"
-        "1. Use `/quizon` to start a quiz loop. After you start, you will be asked to choose a time interval for the quiz.\n"
-        "2. The available intervals are:\n"
-        "   - 30 seconds\n"
-        "   - 1 minute\n"
-        "   - 5 minutes\n"
-        "   - 10 minutes\n"
-        "3. Once you choose an interval, the quiz will start, and you will get a new question at the chosen interval. Each quiz will automatically close after a specific time.\n"
-        "4. Use `/quiz off` to stop the quiz loop at any time.\n\n"
-        "**Commands**:\n"
-        "• `/quizon` - Start the quiz loop\n"
-        "• `/quizoff` - Stop the quiz loop\n\n"
-        "Enjoy the quizzes! 🎉"
+        "📌 **How it works:**\n"
+        "1. Use `/quizon` to start a quiz loop.\n"
+        "2. Choose a time interval (30s, 1min, 5min, 10min).\n"
+        "3. A new quiz will be sent automatically at the chosen interval.\n"
+        "4. Use `/quizoff` to stop the quiz loop anytime.\n\n"
+        "✅ **Commands:**\n"
+        "• `/quizon` - Start the quiz\n"
+        "• `/quizoff` - Stop the quiz"
     )
 
-# /quiz on command to show time interval options
+# /quiz on command
 @app.on_message(filters.command(["quizon", "uizon"], prefixes=["/", "!", ".", "Q", "q"]))
 async def quiz_on(client, message):
-    user_id = message.from_user.id
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("30s", callback_data="30_sec"), InlineKeyboardButton("1min", callback_data="1_min")],
+        [InlineKeyboardButton("5min", callback_data="5_min"), InlineKeyboardButton("10min", callback_data="10_min")]
+    ])
 
-    # Create time interval buttons arranged in 4x2 grid
-    keyboard = InlineKeyboardMarkup(
-        [
-            [InlineKeyboardButton("30s", callback_data="30_sec"), InlineKeyboardButton("1min", callback_data="1_min")],
-            [InlineKeyboardButton("5min", callback_data="5_min"), InlineKeyboardButton("10min", callback_data="10_min")],
-        ]
-    )
-
-    # Send buttons with a description
     await message.reply_text(
-        "**Choose how often you want the quiz to run:**\n\n"
-        "- 30s: Quiz every 30 seconds\n"
-        "- 1min: Quiz every 1 minute\n"
-        "- 5min: Quiz every 5 minutes\n"
-        "- 10min: Quiz every 10 minutes\n\n"
-        "**Use** `/quizoff` **to stop the quiz loop at any time.**",
+        "**Choose the quiz interval:**\n"
+        "- 30s: Every 30 seconds\n"
+        "- 1min: Every 1 minute\n"
+        "- 5min: Every 5 minutes\n"
+        "- 10min: Every 10 minutes\n\n"
+        "🔴 Use `/quizoff` to stop the quiz anytime.",
         reply_markup=keyboard
     )
 
-# Handle button presses for time intervals
-
+# Handle time interval selection
 @app.on_callback_query(filters.regex(r"^\d+_sec$|^\d+_min$"))
 async def start_quiz_loop(client, callback_query):
     user_id = callback_query.from_user.id
     chat_id = callback_query.message.chat.id
 
     if user_id in quiz_loops:
-        await callback_query.answer("Qᴜɪᴢ ʟᴏᴏᴘ ɪs ᴀʟʀᴇᴀᴅʏ ʀᴜɴɴɪɴɢ...!!", show_alert=True)
+        await callback_query.answer("Quiz is already running!", show_alert=True)
         return
 
-    # Determine interval based on the button pressed
     interval_mapping = {
         "30_sec": (30, "30 seconds"),
         "1_min": (60, "1 minute"),
@@ -126,43 +116,43 @@ async def start_quiz_loop(client, callback_query):
 
     interval, interval_text = interval_mapping.get(callback_query.data, (60, "1 minute"))
 
-    # Delete the original message with buttons
+    await callback_query.answer("Quiz started!", show_alert=True)
     await callback_query.message.delete()
-
-    # Confirm that the quiz loop has started
-    await callback_query.message.reply_text(f"✅ Qᴜɪᴢ ʟᴏᴏᴘ sᴛᴀʀᴛᴇᴅ! Yᴏᴜ'ʟʟ ʀᴇᴄᴇɪᴠᴇ ᴀ ǫᴜɪᴢ ᴇᴠᴇʀʏ {interval_text}.")
+    await callback_query.message.reply_text(f"✅ Quiz loop started! A new quiz will be sent every {interval_text}.")
 
     quiz_loops[user_id] = True  # Mark loop as running
 
-    # Start the quiz loop with the selected interval
     while quiz_loops.get(user_id, False):
         await send_quiz_poll(client, chat_id, user_id, interval)
-        await asyncio.sleep(interval)  # Wait for the selected interval before sending the next quiz
-# /quiz off command to stop the quiz loop
+        for _ in range(interval):
+            if not quiz_loops.get(user_id, False):
+                return
+            await asyncio.sleep(1)
+
+# /quiz off command
 @app.on_message(filters.command(["quizoff", "uizoff"], prefixes=["/", "!", ".", "Q", "q"]))
 async def stop_quiz(client, message):
     user_id = message.from_user.id
 
     if user_id not in quiz_loops:
-        await message.reply_text("Nᴏ ǫᴜɪᴢ ʟᴏᴏᴘ ɪs ʀᴜɴɴɪɴɢ.")
-    else:
-        quiz_loops.pop(user_id)  # Stop the loop
-        await message.reply_text("⛔ Qᴜɪᴢ ʟᴏᴏᴘ sᴛᴏᴘᴘᴇᴅ...!!")
+        await message.reply_text("⚠ No active quiz loop.")
+        return
 
-        # Delete the active poll if there's one
-        if user_id in active_polls:
-            try:
-                await app.delete_messages(chat_id=message.chat.id, message_ids=active_polls[user_id])
-                active_polls.pop(user_id)
-            except Exception as e:
-                print(f"Failed to delete active poll: {e}")
+    quiz_loops.pop(user_id)
+    await message.reply_text("⛔ Quiz loop stopped!")
 
-# Help section for users
-__MODULE__ = "Qᴜɪᴢ"
+    if user_id in active_polls:
+        try:
+            await app.delete_messages(chat_id=message.chat.id, message_ids=active_polls[user_id])
+            active_polls.pop(user_id)
+        except Exception as e:
+            print(f"Failed to delete active poll: {e}")
+
+# Help section
+__MODULE__ = "Quiz"
 __HELP__ = """
-**Quiz Bot Help**
-- Use `/quizon` to start the quiz loop. You will be prompted to select a time interval for quizzes.
-- Use `/quizoff` to stop the quiz loop at any time.
-- Quizzes will be sent at the specified intervals, with each poll lasting for a set time.
-- The bot will handle the countdown and notify you when a quiz is sent.
+📌 **Quiz Bot Help**
+- Use `/quizon` to start the quiz loop. You will be asked to select a time interval.
+- Use `/quizoff` to stop the quiz loop anytime.
+- The bot will automatically send a quiz at the chosen interval.
 """
